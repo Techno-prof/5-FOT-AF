@@ -1,0 +1,443 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Évaluation Technologie 5ème - Quiz Interactif</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&display=swap');
+        body {
+            font-family: 'Outfit', sans-serif;
+        }
+    </style>
+</head>
+<body class="bg-slate-100 min-h-screen text-slate-800 flex flex-col justify-between">
+
+    <!-- Header -->
+    <header class="bg-indigo-700 text-white shadow-lg py-6 px-4">
+        <div class="max-w-4xl mx-auto flex justify-between items-center">
+            <div>
+                <h1 class="text-2xl font-bold flex items-center gap-2">
+                    <i class="fa-solid fa-graduation-cap text-yellow-300"></i>
+                    Technologie 5ème
+                </h1>
+                <p class="text-indigo-200 text-sm">Évaluation : Fonctions d'usage, techniques et solutions</p>
+            </div>
+            <div id="score-badge" class="bg-indigo-800 border border-indigo-500 rounded-full px-4 py-2 text-sm font-semibold hidden">
+                Score : <span id="current-score" class="text-yellow-300">0</span> / 10
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Container -->
+    <main class="max-w-3xl mx-auto w-full p-4 my-auto">
+        
+        <!-- Screen: Welcome -->
+        <div id="screen-welcome" class="bg-white rounded-2xl shadow-xl p-8 text-center border border-slate-200">
+            <div class="w-20 h-20 bg-indigo-100 text-indigo-600 rounded-full flex items-center justify-center mx-auto mb-6 text-3xl">
+                <i class="fa-solid fa-microchip"></i>
+            </div>
+            <h2 class="text-2xl font-bold text-slate-800 mb-2">Prêt pour l'évaluation ?</h2>
+            <p class="text-slate-600 mb-6 leading-relaxed">
+                Testez vos connaissances sur l'analyse fonctionnelle (Vélo, Trottinette électrique, etc.) à travers 10 questions à choix multiples.
+            </p>
+            <div class="bg-indigo-50 rounded-xl p-4 mb-6 text-left border border-indigo-100 text-sm text-indigo-900">
+                <h3 class="font-semibold mb-1 flex items-center gap-2">
+                    <i class="fa-solid fa-circle-info text-indigo-600"></i> Rappel rapide :
+                </h3>
+                <ul class="list-disc list-inside space-y-1 text-slate-700">
+                    <li><strong>Fonction d'usage :</strong> À quoi sert l'objet ? (ex: Se déplacer)</li>
+                    <li><strong>Fonction technique :</strong> Que doit faire l'objet ? (ex: Freiner)</li>
+                    <li><strong>Solution technique :</strong> Avec quoi le fait-on ? (ex: Le frein à disque)</li>
+                </ul>
+            </div>
+            <button onclick="quiz.start()" class="w-full sm:w-auto px-8 py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-xl transition shadow-lg shadow-indigo-200 flex items-center justify-center gap-2 mx-auto">
+                <i class="fa-solid fa-play"></i> Commencer le quiz
+            </button>
+        </div>
+
+        <!-- Screen: Quiz -->
+        <div id="screen-quiz" class="hidden bg-white rounded-2xl shadow-xl p-6 sm:p-8 border border-slate-200">
+            <!-- Progress Bar -->
+            <div class="mb-6">
+                <div class="flex justify-between items-center mb-2">
+                    <span id="question-number" class="text-xs font-bold text-indigo-600 tracking-wider uppercase">Question 1 / 10</span>
+                    <span id="question-category" class="text-xs font-semibold px-2.5 py-1 bg-slate-100 text-slate-600 rounded-full">Général</span>
+                </div>
+                <div class="w-full bg-slate-200 h-2.5 rounded-full overflow-hidden">
+                    <div id="progress-bar" class="bg-indigo-600 h-2.5 rounded-full transition-all duration-300" style="width: 10%"></div>
+                </div>
+            </div>
+
+            <!-- Question Title -->
+            <h3 id="question-text" class="text-lg sm:text-xl font-semibold text-slate-800 mb-6">
+                <!-- Loaded via JS -->
+            </h3>
+
+            <!-- Options Container -->
+            <div id="options-container" class="space-y-3 mb-6">
+                <!-- Options via JS -->
+            </div>
+
+            <!-- Feedback Message -->
+            <div id="feedback" class="hidden p-4 rounded-xl mb-6 text-sm font-medium border flex items-start gap-3">
+                <!-- Loaded via JS -->
+            </div>
+
+            <!-- Action Button -->
+            <button id="next-btn" onclick="quiz.nextQuestion()" class="hidden w-full py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-xl transition shadow-md flex items-center justify-center gap-2">
+                <span>Question suivante</span>
+                <i class="fa-solid fa-arrow-right"></i>
+            </button>
+        </div>
+
+        <!-- Screen: Results -->
+        <div id="screen-results" class="hidden bg-white rounded-2xl shadow-xl p-8 text-center border border-slate-200">
+            <div id="result-icon" class="w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-6 text-3xl">
+                <!-- Icon loaded via JS -->
+            </div>
+            <h2 id="result-title" class="text-2xl font-bold text-slate-800 mb-2">Résultats</h2>
+            <p id="result-subtitle" class="text-slate-600 mb-6">Voici votre bilan d'évaluation :</p>
+            
+            <div class="bg-slate-50 rounded-2xl p-6 mb-6 border border-slate-200 flex justify-around items-center">
+                <div>
+                    <div class="text-xs text-slate-500 uppercase tracking-wider font-semibold mb-1">Score final</div>
+                    <div class="text-4xl font-extrabold text-indigo-600"><span id="final-score">0</span> / 10</div>
+                </div>
+                <div class="h-12 w-px bg-slate-300"></div>
+                <div>
+                    <div class="text-xs text-slate-500 uppercase tracking-wider font-semibold mb-1">Appréciation</div>
+                    <div id="final-grade" class="text-lg font-bold text-slate-800">Très bien</div>
+                </div>
+            </div>
+
+            <div id="review-container" class="text-left mb-6 space-y-3 max-h-60 overflow-y-auto pr-2 border-t pt-4 border-slate-200">
+                <!-- Answer recap dynamically loaded -->
+            </div>
+
+            <button onclick="quiz.restart()" class="w-full sm:w-auto px-8 py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-xl transition shadow-lg shadow-indigo-200 flex items-center justify-center gap-2 mx-auto">
+                <i class="fa-solid fa-rotate-right"></i> Recommencer l'évaluation
+            </button>
+        </div>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="text-center py-4 text-xs text-slate-500 border-t border-slate-200 bg-white">
+        Évaluation de Technologie 5ème • Analyse Fonctionnelle
+    </footer>
+
+    <!-- Logic JS -->
+    <script>
+        const questionsData = [
+            {
+                question: "Quelle est la fonction d'usage principale d'une trottinette électrique ?",
+                category: "Fonction d'usage",
+                options: [
+                    "Permettre à l'utilisateur de se déplacer sans effort physique intense.",
+                    "Fournir de l'énergie électrique au moteur.",
+                    "Convertir l'énergie mécanique en électricité.",
+                    "Assurer la sécurité grâce à un frein à disque."
+                ],
+                correct: 0,
+                explanation: "La fonction d'usage répond à la question « À quoi sert l'objet ? ». Elle décrit le service rendu à l'utilisateur."
+            },
+            {
+                question: "Parmi les propositions suivantes, quelle est la définition exacte d'une solution technique ?",
+                category: "Définitions",
+                options: [
+                    "Le besoin global auquel répond l'objet technique.",
+                    "L'action ou l'exigence que doit réaliser l'objet.",
+                    "Le composant matériel concret choisi pour réaliser une fonction technique.",
+                    "Le prix d'un composant électronique."
+                ],
+                correct: 2,
+                explanation: "La solution technique est le composant ou matériel physique (ex: une batterie, un frein, un engrenage) répondant à un besoin fonctionnel."
+            },
+            {
+                question: "Sur un vélo classique, quelle est la solution technique permettant d'assurer la fonction technique « Propulser le vélo » ?",
+                category: "Vélo",
+                options: [
+                    "Le guidon et la potence.",
+                    "Le pédalier, la chaîne et les pignons.",
+                    "Les patins de frein et la jante.",
+                    "La selle et sa tige."
+                ],
+                correct: 1,
+                explanation: "C'est l'ensemble pédalier-chaîne-pignon qui transforme la force des jambes en mouvement de rotation de la roue arrière."
+            },
+            {
+                question: "Quelle est la fonction technique associée à la solution technique « Écran / Display LCD » sur le guidon d'une trottinette électrique ?",
+                category: "Trottinette",
+                options: [
+                    "Informer l'utilisateur sur la vitesse et le niveau de batterie.",
+                    "Recharger la batterie pendant la descente.",
+                    "Allumer le moteur électrique.",
+                    "Bloquer les roues lors du stationnement."
+                ],
+                correct: 0,
+                explanation: "L'écran est la solution matérielle qui permet d'assurer la fonction d'information de l'utilisateur."
+            },
+            {
+                question: "Quelle différence essentielle existe-t-il entre une fonction technique et une solution technique ?",
+                category: "Définitions",
+                options: [
+                    "La fonction technique coûte de l'argent, la solution est gratuite.",
+                    "La fonction technique décrit l'action à réaliser, tandis que la solution technique désigne l'élément matériel qui l'exécute.",
+                    "La solution technique ne change jamais, alors que la fonction varie souvent.",
+                    "Il n'y a aucune différence entre ces deux termes."
+                ],
+                correct: 1,
+                explanation: "La fonction indique 'ce qu'il faut faire' (verbe) et la solution 'ce avec quoi on le fait' (nom du composant)."
+            },
+            {
+                question: "Sur une trottinette électrique, quelle est la solution technique permettant de réaliser la fonction « Stocker l'énergie » ?",
+                category: "Trottinette",
+                options: [
+                    "Le moteur brushless.",
+                    "La batterie rechargeable (ex: Lithium-Ion).",
+                    "Le contrôleur électronique.",
+                    "La prise murale."
+                ],
+                correct: 1,
+                explanation: "La batterie est le composant (solution technique) qui accumule et stocke l'énergie électrique à bord du véhicule."
+            },
+            {
+                question: "Parmi ces énoncés, lequel est rédigé sous la forme d'une fonction technique ?",
+                category: "Méthodologie",
+                options: [
+                    "Frein à disque hydraulique.",
+                    "Éclairer la voie la nuit.",
+                    "Ampoule LED 12 Volts.",
+                    "Pneu tubeless de 10 pouces."
+                ],
+                correct: 1,
+                explanation: "Une fonction technique s'exprime par une action et commence systématiquement par un verbe à l'infinitif ('Éclairer...')."
+            },
+            {
+                question: "Pour la fonction technique « Stopper ou ralentir le véhicule », quelle est une solution technique courante sur une trottinette ou un vélo moderne ?",
+                category: "Solutions",
+                options: [
+                    "Le roulement à billes.",
+                    "Le frein à disque.",
+                    "La fourche suspendue.",
+                    "Le phare à LED."
+                ],
+                correct: 1,
+                explanation: "Le frein à disque est la solution mécanique matérielle permettant de frotter contre la roue pour la stopper."
+            },
+            {
+                question: "Pourquoi plusieurs solutions techniques différentes peuvent-elles exister pour une même fonction technique ?",
+                category: "Conception",
+                options: [
+                    "C'est une erreur de fabrication des ingénieurs.",
+                    "Parce que les constructeurs peuvent faire varier les coûts, le niveau de performance ou les choix technologiques.",
+                    "C'est interdit dans le domaine de la technologie.",
+                    "Pour rendre les objets plus difficiles à réparer."
+                ],
+                correct: 1,
+                explanation: "Exemple pour freiner : on peut utiliser des patins (économiques) ou des disques (très performants). Le choix dépend du besoin et du prix."
+            },
+            {
+                question: "Sur une trottinette électrique, quelle est la fonction technique de la poignée d'accélérateur (ou gâchette) ?",
+                category: "Trottinette",
+                options: [
+                    "Commander la vitesse du moteur électrique.",
+                    "Recharger l'énergie du véhicule.",
+                    "Maintenir la trajectoire en ligne droite.",
+                    "Assurer la suspension avant."
+                ],
+                correct: 0,
+                explanation: "La gâchette/poignée permet à l'utilisateur de piloter la commande de vitesse envoyée au variateur/moteur."
+            }
+        ];
+
+        class QuizApp {
+            constructor(questions) {
+                this.questions = questions;
+                this.currentIndex = 0;
+                this.score = 0;
+                this.userAnswers = [];
+                this.selectedOption = null;
+
+                // DOM Elements
+                this.elWelcome = document.getElementById('screen-welcome');
+                this.elQuiz = document.getElementById('screen-quiz');
+                this.elResults = document.getElementById('screen-results');
+                
+                this.elScoreBadge = document.getElementById('score-badge');
+                this.elCurrentScore = document.getElementById('current-score');
+                this.elQuestionNum = document.getElementById('question-number');
+                this.elCategory = document.getElementById('question-category');
+                this.elProgressBar = document.getElementById('progress-bar');
+                this.elQuestionText = document.getElementById('question-text');
+                this.elOptionsContainer = document.getElementById('options-container');
+                this.elFeedback = document.getElementById('feedback');
+                this.elNextBtn = document.getElementById('next-btn');
+            }
+
+            start() {
+                this.currentIndex = 0;
+                this.score = 0;
+                this.userAnswers = [];
+                this.elWelcome.classList.add('hidden');
+                this.elResults.classList.add('hidden');
+                this.elQuiz.classList.remove('hidden');
+                this.elScoreBadge.classList.remove('hidden');
+                this.updateScoreUI();
+                this.loadQuestion();
+            }
+
+            loadQuestion() {
+                this.selectedOption = null;
+                const q = this.questions[this.currentIndex];
+                
+                // UI updates
+                this.elQuestionNum.textContent = `Question ${this.currentIndex + 1} / ${this.questions.length}`;
+                this.elCategory.textContent = q.category;
+                this.elProgressBar.style.width = `${((this.currentIndex + 1) / this.questions.length) * 100}%`;
+                this.elQuestionText.textContent = q.question;
+                
+                // Reset feedback and button
+                this.elFeedback.className = 'hidden';
+                this.elNextBtn.classList.add('hidden');
+
+                // Generate Options
+                this.elOptionsContainer.innerHTML = '';
+                q.options.forEach((opt, idx) => {
+                    const btn = document.createElement('button');
+                    btn.className = "w-full text-left p-4 rounded-xl border border-slate-200 bg-slate-50 hover:bg-indigo-50 hover:border-indigo-300 transition flex items-center justify-between group cursor-pointer";
+                    btn.onclick = () => this.selectOption(idx);
+                    btn.innerHTML = `
+                        <span class="flex items-center gap-3">
+                            <span class="w-8 h-8 rounded-lg bg-white border border-slate-300 flex items-center justify-center font-bold text-slate-600 group-hover:border-indigo-500 group-hover:text-indigo-600 text-sm shadow-sm">${String.fromCharCode(65 + idx)}</span>
+                            <span class="font-medium text-slate-700 group-hover:text-slate-900">${opt}</span>
+                        </span>
+                        <i class="fa-regular fa-circle text-slate-300 group-hover:text-indigo-400"></i>
+                    `;
+                    this.elOptionsContainer.appendChild(btn);
+                });
+            }
+
+            selectOption(index) {
+                if (this.selectedOption !== null) return; // Prevent double click
+                this.selectedOption = index;
+
+                const q = this.questions[this.currentIndex];
+                const isCorrect = index === q.correct;
+
+                if (isCorrect) {
+                    this.score++;
+                    this.updateScoreUI();
+                }
+
+                this.userAnswers.push({
+                    question: q.question,
+                    selected: index,
+                    correct: q.correct,
+                    isCorrect: isCorrect,
+                    explanation: q.explanation
+                });
+
+                // Style option buttons
+                const buttons = this.elOptionsContainer.children;
+                for (let i = 0; i < buttons.length; i++) {
+                    buttons[i].classList.remove('hover:bg-indigo-50', 'hover:border-indigo-300', 'cursor-pointer');
+                    buttons[i].disabled = true;
+
+                    if (i === q.correct) {
+                        buttons[i].className = "w-full text-left p-4 rounded-xl border-2 border-emerald-500 bg-emerald-50 text-emerald-900 flex items-center justify-between font-medium";
+                        buttons[i].querySelector('i').className = "fa-solid fa-circle-check text-emerald-600 text-lg";
+                    } else if (i === index && !isCorrect) {
+                        buttons[i].className = "w-full text-left p-4 rounded-xl border-2 border-rose-500 bg-rose-50 text-rose-900 flex items-center justify-between font-medium";
+                        buttons[i].querySelector('i').className = "fa-solid fa-circle-xmark text-rose-600 text-lg";
+                    } else {
+                        buttons[i].classList.add('opacity-50');
+                    }
+                }
+
+                // Show Feedback
+                this.elFeedback.classList.remove('hidden');
+                if (isCorrect) {
+                    this.elFeedback.className = "p-4 rounded-xl mb-6 text-sm font-medium border flex items-start gap-3 bg-emerald-50 border-emerald-200 text-emerald-800";
+                    this.elFeedback.innerHTML = `<i class="fa-solid fa-circle-check text-emerald-600 text-lg mt-0.5"></i><div><strong>Excellente réponse !</strong><br>${q.explanation}</div>`;
+                } else {
+                    this.elFeedback.className = "p-4 rounded-xl mb-6 text-sm font-medium border flex items-start gap-3 bg-rose-50 border-rose-200 text-rose-800";
+                    this.elFeedback.innerHTML = `<i class="fa-solid fa-triangle-exclamation text-rose-600 text-lg mt-0.5"></i><div><strong>Incorrect.</strong><br>${q.explanation}</div>`;
+                }
+
+                // Show Next Button
+                this.elNextBtn.classList.remove('hidden');
+            }
+
+            nextQuestion() {
+                this.currentIndex++;
+                if (this.currentIndex < this.questions.length) {
+                    this.loadQuestion();
+                } else {
+                    this.showResults();
+                }
+            }
+
+            updateScoreUI() {
+                this.elCurrentScore.textContent = this.score;
+            }
+
+            showResults() {
+                this.elQuiz.classList.add('hidden');
+                this.elResults.classList.remove('hidden');
+
+                document.getElementById('final-score').textContent = this.score;
+
+                const resIcon = document.getElementById('result-icon');
+                const resTitle = document.getElementById('result-title');
+                const resGrade = document.getElementById('final-grade');
+
+                if (this.score >= 8) {
+                    resIcon.className = "w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-6 text-3xl bg-emerald-100 text-emerald-600";
+                    resIcon.innerHTML = `<i class="fa-solid fa-trophy"></i>`;
+                    resTitle.textContent = "Bravo ! Excellent travail !";
+                    resGrade.textContent = "Très bien maîtrisé";
+                    resGrade.className = "text-lg font-bold text-emerald-600";
+                } else if (this.score >= 5) {
+                    resIcon.className = "w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-6 text-3xl bg-amber-100 text-amber-600";
+                    resIcon.innerHTML = `<i class="fa-solid fa-thumbs-up"></i>`;
+                    resTitle.textContent = "Bon travail !";
+                    resGrade.textContent = "Notions acquises";
+                    resGrade.className = "text-lg font-bold text-amber-600";
+                } else {
+                    resIcon.className = "w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-6 text-3xl bg-rose-100 text-rose-600";
+                    resIcon.innerHTML = `<i class="fa-solid fa-book-open"></i>`;
+                    resTitle.textContent = "À réviser encore un peu...";
+                    resGrade.textContent = "À revoir";
+                    resGrade.className = "text-lg font-bold text-rose-600";
+                }
+
+                // Recap List
+                const reviewContainer = document.getElementById('review-container');
+                reviewContainer.innerHTML = '<h4 class="font-bold text-slate-700 text-sm mb-2">Récapitulatif des questions :</h4>';
+                this.userAnswers.forEach((ans, i) => {
+                    const item = document.createElement('div');
+                    item.className = `p-3 rounded-lg text-xs flex items-center justify-between border ${ans.isCorrect ? 'bg-emerald-50/50 border-emerald-200 text-emerald-900' : 'bg-rose-50/50 border-rose-200 text-rose-900'}`;
+                    item.innerHTML = `
+                        <div class="truncate pr-2">
+                            <span class="font-bold">Q${i+1}:</span> ${ans.question}
+                        </div>
+                        <i class="fa-solid ${ans.isCorrect ? 'fa-check text-emerald-600' : 'fa-xmark text-rose-600'} text-sm font-bold"></i>
+                    `;
+                    reviewContainer.appendChild(item);
+                });
+            }
+
+            restart() {
+                this.start();
+            }
+        }
+
+        // Initialize App
+        const quiz = new QuizApp(questionsData);
+    </script>
+</body>
+</html>

@@ -1,0 +1,832 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Analyse Fonctionnelle - Technologie 5ème</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700;800&display=swap');
+        
+        body {
+            font-family: 'Outfit', sans-serif;
+            user-select: none;
+        }
+
+        /* Custom scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #f1f5f9;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
+
+        /* SVG Connectors overlay canvas */
+        .svg-connectors {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 10;
+        }
+
+        /* Smooth transitions for links and cards */
+        .connector-line {
+            transition: stroke-dashoffset 0.5s ease, stroke 0.3s ease, stroke-width 0.3s ease;
+        }
+
+        .card-node {
+            transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .card-node:hover {
+            transform: translateY(-2px);
+        }
+
+        /* Drag and drop feedback styling */
+        .drag-over {
+            border-style: dashed !important;
+            border-color: #6366f1 !important;
+            background-color: #e0e7ff !important;
+        }
+    </style>
+</head>
+<body class="bg-slate-900 min-h-screen text-slate-100 flex flex-col justify-between overflow-x-hidden">
+
+    <!-- Header Navigation -->
+    <header class="bg-slate-800/90 backdrop-blur border-b border-slate-700/80 sticky top-0 z-30 shadow-lg px-4 py-3">
+        <div class="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
+            <!-- Title and Grade -->
+            <div class="flex items-center gap-3">
+                <div class="p-2.5 bg-gradient-to-tr from-indigo-600 to-violet-500 rounded-xl shadow-md text-white">
+                    <i class="fa-solid fa-sitemap text-xl"></i>
+                </div>
+                <div>
+                    <h1 class="text-xl font-extrabold tracking-tight text-white flex items-center gap-2">
+                        Analyse Fonctionnelle
+                        <span class="text-xs font-semibold px-2.5 py-0.5 rounded-full bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">5ème</span>
+                    </h1>
+                    <p class="text-xs text-slate-400">Arborescence en colonnes : Besoin ➔ Fonction ➔ Solution</p>
+                </div>
+            </div>
+
+            <!-- Mode Switcher (Visualisation vs Exercice) -->
+            <div class="flex items-center bg-slate-900/90 p-1.5 rounded-xl border border-slate-700">
+                <button id="btn-mode-explore" onclick="app.setMode('explore')" class="px-4 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-2 bg-indigo-600 text-white shadow">
+                    <i class="fa-solid fa-eye"></i> Mode Exploration
+                </button>
+                <button id="btn-mode-game" onclick="app.setMode('game')" class="px-4 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-2 text-slate-400 hover:text-white">
+                    <i class="fa-solid fa-gamepad"></i> Mode Exercice
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content Container -->
+    <main class="max-w-7xl w-full mx-auto p-4 sm:p-6 flex-1 flex flex-col gap-6">
+
+        <!-- Object Selector Tabs -->
+        <section class="flex flex-wrap items-center justify-center gap-2 sm:gap-3">
+            <button onclick="app.selectObject('velo')" id="tab-velo" class="tab-btn px-5 py-2.5 rounded-xl text-sm font-bold border transition flex items-center gap-2.5 shadow-sm">
+                <i class="fa-solid fa-bicycle text-lg"></i> Vélo Tout Terrain
+            </button>
+            <button onclick="app.selectObject('trottinette')" id="tab-trottinette" class="tab-btn px-5 py-2.5 rounded-xl text-sm font-bold border transition flex items-center gap-2.5 shadow-sm">
+                <i class="fa-solid fa-bolt text-lg"></i> Trottinette Électrique
+            </button>
+            <button onclick="app.selectObject('perceuse')" id="tab-perceuse" class="tab-btn px-5 py-2.5 rounded-xl text-sm font-bold border transition flex items-center gap-2.5 shadow-sm">
+                <i class="fa-solid fa-screwdriver-wrench text-lg"></i> Perceuse Sans Fil
+            </button>
+            <button onclick="app.selectObject('imprimante3d')" id="tab-imprimante3d" class="tab-btn px-5 py-2.5 rounded-xl text-sm font-bold border transition flex items-center gap-2.5 shadow-sm">
+                <i class="fa-solid fa-cube text-lg"></i> Imprimante 3D
+            </button>
+        </section>
+
+        <!-- Instructions / Game Banner -->
+        <section id="info-banner" class="bg-indigo-950/40 border border-indigo-500/30 rounded-2xl p-4 flex flex-col sm:flex-row items-center justify-between gap-4 text-sm">
+            <div class="flex items-center gap-3">
+                <div class="p-2 bg-indigo-500/20 text-indigo-400 rounded-lg text-lg">
+                    <i id="info-icon" class="fa-solid fa-lightbulb"></i>
+                </div>
+                <div>
+                    <span id="info-title" class="font-bold text-indigo-200">Mode Exploration :</span>
+                    <span id="info-desc" class="text-slate-300"> Cliquez sur une fonction ou solution pour mettre en évidence ses liens directes de la gauche vers la droite.</span>
+                </div>
+            </div>
+            <div id="game-controls" class="hidden flex items-center gap-3">
+                <div class="bg-slate-800 px-3 py-1.5 rounded-lg border border-slate-700 text-xs">
+                    Score : <span id="game-score" class="font-bold text-amber-400 text-sm">0/0</span>
+                </div>
+                <button onclick="app.resetGame()" class="px-3 py-1.5 bg-slate-700 hover:bg-slate-600 text-xs font-semibold rounded-lg text-white transition">
+                    <i class="fa-solid fa-arrows-rotate mr-1"></i> Réinitialiser
+                </button>
+            </div>
+        </section>
+
+        <!-- 3-COLUMNS FUNCTIONAL TREE WRAPPER -->
+        <section class="relative bg-slate-950/60 border border-slate-800 rounded-2xl p-4 sm:p-6 shadow-2xl min-h-[550px] flex flex-col justify-center">
+            
+            <!-- Dynamic SVG Connectors Lines Overlay -->
+            <svg id="svg-canvas" class="svg-connectors">
+                <defs>
+                    <linearGradient id="grad-blue-green" x1="0%" y1="0%" x2="100%" y2="0%">
+                        <stop offset="0%" stop-color="#6366f1" stop-opacity="0.8" />
+                        <stop offset="100%" stop-color="#10b981" stop-opacity="0.8" />
+                    </linearGradient>
+                    <linearGradient id="grad-green-amber" x1="0%" y1="0%" x2="100%" y2="0%">
+                        <stop offset="0%" stop-color="#10b981" stop-opacity="0.8" />
+                        <stop offset="100%" stop-color="#f59e0b" stop-opacity="0.8" />
+                    </linearGradient>
+                    <filter id="glow" x="-20%" y="-20%" width="140%" height="140%">
+                        <feGaussianBlur stdDeviation="3" result="blur" />
+                        <feComposite in="SourceGraphic" in2="blur" operator="over" />
+                    </filter>
+                </defs>
+            </svg>
+
+            <!-- 3 Columns Grid -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 sm:gap-8 relative z-20">
+                
+                <!-- COLUMN 1: FONCTION D'USAGE -->
+                <div class="flex flex-col">
+                    <div class="flex items-center justify-between mb-4 pb-2 border-b-2 border-indigo-500/80">
+                        <div class="flex items-center gap-2">
+                            <span class="w-3 h-3 rounded-full bg-indigo-500 shadow-lg shadow-indigo-500/50"></span>
+                            <h2 class="text-sm font-extrabold uppercase tracking-wider text-indigo-300">1. Fonction d'usage</h2>
+                        </div>
+                        <span class="text-[10px] text-slate-400 font-semibold bg-indigo-950/80 border border-indigo-800 px-2 py-0.5 rounded-full">À quoi ça sert ?</span>
+                    </div>
+
+                    <div id="col-usage" class="flex-1 flex flex-col justify-center items-center py-4">
+                        <!-- Card rendered via JS -->
+                    </div>
+                </div>
+
+                <!-- COLUMN 2: FONCTIONS TECHNIQUES -->
+                <div class="flex flex-col">
+                    <div class="flex items-center justify-between mb-4 pb-2 border-b-2 border-emerald-500/80">
+                        <div class="flex items-center gap-2">
+                            <span class="w-3 h-3 rounded-full bg-emerald-500 shadow-lg shadow-emerald-500/50"></span>
+                            <h2 class="text-sm font-extrabold uppercase tracking-wider text-emerald-300">2. Fonctions techniques</h2>
+                        </div>
+                        <span class="text-[10px] text-slate-400 font-semibold bg-emerald-950/80 border border-emerald-800 px-2 py-0.5 rounded-full">Que doit-il faire ?</span>
+                    </div>
+
+                    <div id="col-techniques" class="flex-1 flex flex-col justify-center gap-4 py-2">
+                        <!-- Cards rendered via JS -->
+                    </div>
+                </div>
+
+                <!-- COLUMN 3: SOLUTIONS TECHNIQUES -->
+                <div class="flex flex-col">
+                    <div class="flex items-center justify-between mb-4 pb-2 border-b-2 border-amber-500/80">
+                        <div class="flex items-center gap-2">
+                            <span class="w-3 h-3 rounded-full bg-amber-500 shadow-lg shadow-amber-500/50"></span>
+                            <h2 class="text-sm font-extrabold uppercase tracking-wider text-amber-300">3. Solutions techniques</h2>
+                        </div>
+                        <span class="text-[10px] text-slate-400 font-semibold bg-amber-950/80 border border-amber-800 px-2 py-0.5 rounded-full">Avec quoi ?</span>
+                    </div>
+
+                    <div id="col-solutions" class="flex-1 flex flex-col justify-center gap-4 py-2">
+                        <!-- Cards rendered via JS -->
+                    </div>
+                </div>
+
+            </div>
+
+        </section>
+
+    </main>
+
+    <!-- Footer Summary Legend -->
+    <footer class="bg-slate-900 border-t border-slate-800 py-4 px-4 text-xs text-slate-400">
+        <div class="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-3 text-center sm:text-left">
+            <div class="flex flex-wrap items-center justify-center gap-4">
+                <span class="flex items-center gap-1.5">
+                    <i class="fa-solid fa-circle text-[8px] text-indigo-400"></i>
+                    <strong>Fonction d’usage :</strong> Verbe à l’infinitif (Besoin global)
+                </span>
+                <span class="flex items-center gap-1.5">
+                    <i class="fa-solid fa-circle text-[8px] text-emerald-400"></i>
+                    <strong>Fonction technique :</strong> Action réalisée par l'objet
+                </span>
+                <span class="flex items-center gap-1.5">
+                    <i class="fa-solid fa-circle text-[8px] text-amber-400"></i>
+                    <strong>Solution technique :</strong> Composant matériel concret
+                </span>
+            </div>
+            <div class="text-slate-500">
+                Technologie Collège 5<sup>ème</sup> • Analyse Fonctionnelle
+            </div>
+        </div>
+    </footer>
+
+    <!-- JAVASCRIPT APP LOGIC -->
+    <script>
+        // Database of technical systems
+        const objectsData = {
+            velo: {
+                name: "Vélo Tout Terrain",
+                icon: "fa-bicycle",
+                usage: {
+                    id: "u-velo",
+                    title: "Se déplacer",
+                    desc: "Permettre à un utilisateur de se déplacer de manière autonome sur terre.",
+                    icon: "fa-person-biking"
+                },
+                items: [
+                    {
+                        techId: "ft-v1",
+                        techTitle: "Propulser le vélo",
+                        techDesc: "Transformer la force des jambes en mouvement de rotation.",
+                        techIcon: "fa-person-running",
+                        solId: "sol-v1",
+                        solTitle: "Pédalier, chaîne et pignons",
+                        solDesc: "Ensemble mécanique de transmission du mouvement à la roue arrière.",
+                        solIcon: "fa-gear"
+                    },
+                    {
+                        techId: "ft-v2",
+                        techTitle: "Ralentir / Stopper",
+                        techDesc: "Réduire la vitesse ou arrêter complètement le véhicule.",
+                        techIcon: "fa-hand-paper",
+                        solId: "sol-v2",
+                        solTitle: "Leviers, câbles et freins à disque",
+                        solDesc: "Pince hydraulique ou mécanique serrant un disque solidaire de la roue.",
+                        solIcon: "fa-compact-disc"
+                    },
+                    {
+                        techId: "ft-v3",
+                        techTitle: "Diriger le véhicule",
+                        techDesc: "Orienter la roue avant pour choisir la trajectoire.",
+                        techIcon: "fa-compass",
+                        solId: "sol-v3",
+                        solTitle: "Guidon et fourche orientable",
+                        solDesc: "Ensemble guidon / potence pivotant dans la colonne de direction.",
+                        solIcon: "fa-arrows-left-right"
+                    },
+                    {
+                        techId: "ft-v4",
+                        techTitle: "Supporter l'utilisateur",
+                        techDesc: "Porter le poids du cycliste confortablement.",
+                        techIcon: "fa-chair",
+                        solId: "sol-v4",
+                        solTitle: "Cadre rigide et selle",
+                        solDesc: "Structure tubulaire en aluminium/acier surmontée d'une assise.",
+                        solIcon: "fa-shield-halved"
+                    }
+                ]
+            },
+            trottinette: {
+                name: "Trottinette Électrique",
+                icon: "fa-bolt",
+                usage: {
+                    id: "u-trott",
+                    title: "Se déplacer sans effort",
+                    desc: "Transporter rapidement une personne en milieu urbain grâce à l'énergie électrique.",
+                    icon: "fa-bolt-lightning"
+                },
+                items: [
+                    {
+                        techId: "ft-t1",
+                        techTitle: "Créer le mouvement",
+                        techDesc: "Convertir l'énergie électrique en énergie mécanique de rotation.",
+                        techIcon: "fa-arrows-spin",
+                        solId: "sol-t1",
+                        solTitle: "Moteur électrique (Brushless)",
+                        solDesc: "Moteur électrique directement intégré dans la roue arrière/avant.",
+                        solIcon: "fa-atom"
+                    },
+                    {
+                        techId: "ft-t2",
+                        techTitle: "Stocker l'énergie",
+                        techDesc: "Accumuler l'électricité nécessaire au fonctionnement du moteur.",
+                        techIcon: "fa-battery-full",
+                        solId: "sol-t2",
+                        solTitle: "Batterie Lithium-Ion",
+                        solDesc: "Accumulateur électrique rechargeable fixé sous le deck/plateau.",
+                        solIcon: "fa-car-battery"
+                    },
+                    {
+                        techId: "ft-t3",
+                        techTitle: "Commander la vitesse",
+                        techDesc: "Permettre à l'utilisateur de régler l'accélération.",
+                        techIcon: "fa-gauge-high",
+                        solId: "sol-t3",
+                        solTitle: "Gâchette d'accélérateur",
+                        solDesc: "Capteur au pouce connecté au variateur de vitesse sur le guidon.",
+                        solIcon: "fa-hand-pointer"
+                    },
+                    {
+                        techId: "ft-t4",
+                        techTitle: "Freiner le véhicule",
+                        techDesc: "Assurer la sécurité en ralentissant rapidement la trottinette.",
+                        techIcon: "fa-stop-circle",
+                        solId: "sol-t4",
+                        solTitle: "Frein à disque et frein moteur",
+                        solDesc: "Système mixte mécanique à disque et freinage électromagnétique.",
+                        solIcon: "fa-ban"
+                    }
+                ]
+            },
+            perceuse: {
+                name: "Perceuse Sans Fil",
+                icon: "fa-screwdriver-wrench",
+                usage: {
+                    id: "u-perceuse",
+                    title: "Percer des trous",
+                    desc: "Réaliser des perçages précis dans divers matériaux (bois, métal, plastique).",
+                    icon: "fa-circle-dot"
+                },
+                items: [
+                    {
+                        techId: "ft-p1",
+                        techTitle: "Fournir l'énergie",
+                        techDesc: "Alimenter le système de manière autonome.",
+                        techIcon: "fa-plug",
+                        solId: "sol-p1",
+                        solTitle: "Batterie amovible",
+                        solDesc: "Bloc accumulateur clipsable sous la poignée de la perceuse.",
+                        solIcon: "fa-battery-three-quarters"
+                    },
+                    {
+                        techId: "ft-p2",
+                        techTitle: "Créer la rotation",
+                        techDesc: "Transformer l'électricité en force de rotation.",
+                        techIcon: "fa-rotate",
+                        solId: "sol-p2",
+                        solTitle: "Moteur électrique et engrenages",
+                        solDesc: "Moteur couplé à un réducteur planétaire à engrenages.",
+                        solIcon: "fa-cogs"
+                    },
+                    {
+                        techId: "ft-p3",
+                        techTitle: "Maintenir l'outil",
+                        techDesc: "Fixer solidement le foret pour percer sans glisser.",
+                        techIcon: "fa-grip",
+                        solId: "sol-p3",
+                        solTitle: "Mandrin auto-serrant",
+                        solDesc: "Système à 3 mors métalliques se resserrant à la main.",
+                        solIcon: "fa-dharmachakra"
+                    }
+                ]
+            },
+            imprimante3d: {
+                name: "Imprimante 3D",
+                icon: "fa-cube",
+                usage: {
+                    id: "u-imp3d",
+                    title: "Fabriquer en 3D",
+                    desc: "Créer des objets réels en plastique couche par couche à partir d'un fichier numérique.",
+                    icon: "fa-cubes"
+                },
+                items: [
+                    {
+                        techId: "ft-i1",
+                        techTitle: "Fondre le plastique",
+                        techDesc: "Chauffer le filament jusqu'à le rendre liquide/pâteux.",
+                        techIcon: "fa-fire",
+                        solId: "sol-i1",
+                        solTitle: "Buse chauffante (Extrudeur)",
+                        solDesc: "Corps en aluminium avec résistance électrique et buse en laiton.",
+                        solIcon: "fa-temperature-high"
+                    },
+                    {
+                        techId: "ft-i2",
+                        techTitle: "Déplacer la tête (X, Y, Z)",
+                        techDesc: "Guider la buse avec une grande précision dans l'espace.",
+                        techIcon: "fa-up-down-left-right",
+                        solId: "sol-i2",
+                        solTitle: "Moteurs pas-à-pas et courroies",
+                        solDesc: "Moteurs électriques de précision entraînant des courroies cranées.",
+                        solIcon: "fa-sliders"
+                    },
+                    {
+                        techId: "ft-i3",
+                        techTitle: "Supporter la pièce",
+                        techDesc: "Offrir une surface plane et chaude où dépose le plastique.",
+                        techIcon: "fa-layer-group",
+                        solId: "sol-i3",
+                        solTitle: "Plateau d'impression chauffant",
+                        solDesc: "Plaque en verre ou acier flexible maintenant la pièce collée.",
+                        solIcon: "fa-border-all"
+                    }
+                ]
+            }
+        };
+
+        // Application Controller Class
+        class FunctionalTreeApp {
+            constructor() {
+                this.currentObjKey = 'velo';
+                this.mode = 'explore'; // 'explore' or 'game'
+                this.selectedCardId = null;
+                
+                // Game mode state
+                this.gameMatches = {}; // solId -> assignedTechId
+                this.score = 0;
+
+                // DOM Bindings
+                this.colUsage = document.getElementById('col-usage');
+                this.colTech = document.getElementById('col-techniques');
+                this.colSol = document.getElementById('col-solutions');
+                this.svgCanvas = document.getElementById('svg-canvas');
+
+                this.bindEvents();
+            }
+
+            init() {
+                this.selectObject('velo');
+                window.addEventListener('resize', () => this.drawConnectors());
+            }
+
+            bindEvents() {
+                // Redraw lines after standard transitions/scroll
+                window.addEventListener('scroll', () => this.drawConnectors(), { passive: true });
+            }
+
+            setMode(mode) {
+                this.mode = mode;
+                this.selectedCardId = null;
+                
+                const btnExplore = document.getElementById('btn-mode-explore');
+                const btnGame = document.getElementById('btn-mode-game');
+                const infoTitle = document.getElementById('info-title');
+                const infoDesc = document.getElementById('info-desc');
+                const infoIcon = document.getElementById('info-icon');
+                const gameControls = document.getElementById('game-controls');
+
+                if (mode === 'explore') {
+                    btnExplore.className = "px-4 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-2 bg-indigo-600 text-white shadow";
+                    btnGame.className = "px-4 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-2 text-slate-400 hover:text-white";
+                    
+                    infoTitle.textContent = "Mode Exploration :";
+                    infoDesc.textContent = " Cliquez sur une carte pour voir immédiatement ses liaisons directes à travers les 3 colonnes.";
+                    infoIcon.className = "fa-solid fa-lightbulb";
+                    gameControls.classList.add('hidden');
+                } else {
+                    btnGame.className = "px-4 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-2 bg-indigo-600 text-white shadow";
+                    btnExplore.className = "px-4 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-2 text-slate-400 hover:text-white";
+                    
+                    infoTitle.textContent = "Mode Exercice (Drag & Drop) :";
+                    infoDesc.textContent = " Glissez chaque Solution Technique (droite) dans la boîte de la Fonction Technique (milieu) correspondante !";
+                    infoIcon.className = "fa-solid fa-puzzle-piece";
+                    gameControls.classList.remove('hidden');
+                    this.resetGame();
+                }
+
+                this.render();
+            }
+
+            selectObject(key) {
+                this.currentObjKey = key;
+                this.selectedCardId = null;
+
+                // Update active tab buttons styling
+                document.querySelectorAll('.tab-btn').forEach(btn => {
+                    btn.classList.remove('bg-indigo-600', 'text-white', 'border-indigo-500', 'bg-slate-800', 'text-slate-300', 'border-slate-700');
+                });
+
+                Object.keys(objectsData).forEach(k => {
+                    const btn = document.getElementById(`tab-${k}`);
+                    if (k === key) {
+                        btn.classList.add('bg-indigo-600', 'text-white', 'border-indigo-400', 'shadow-indigo-500/20');
+                    } else {
+                        btn.classList.add('bg-slate-800/80', 'text-slate-300', 'border-slate-700', 'hover:bg-slate-700/80');
+                    }
+                });
+
+                if (this.mode === 'game') {
+                    this.resetGame();
+                } else {
+                    this.render();
+                }
+            }
+
+            resetGame() {
+                this.gameMatches = {};
+                this.score = 0;
+                this.updateGameScore();
+                this.render();
+            }
+
+            updateGameScore() {
+                const currentObj = objectsData[this.currentObjKey];
+                const total = currentObj.items.length;
+                let correctCount = 0;
+
+                currentObj.items.forEach(item => {
+                    if (this.gameMatches[item.solId] === item.techId) {
+                        correctCount++;
+                    }
+                });
+
+                document.getElementById('game-score').textContent = `${correctCount}/${total}`;
+            }
+
+            // Render all 3 columns
+            render() {
+                const currentObj = objectsData[this.currentObjKey];
+
+                // 1. Render Column 1: Fonction d'Usage
+                this.renderUsageColumn(currentObj.usage);
+
+                // 2. Render Column 2: Fonctions Techniques
+                this.renderTechniquesColumn(currentObj.items);
+
+                // 3. Render Column 3: Solutions Techniques
+                this.renderSolutionsColumn(currentObj.items);
+
+                // 4. Draw SVG Connectors after DOM updates
+                setTimeout(() => this.drawConnectors(), 50);
+            }
+
+            /* COLUMN 1 RENDERER */
+            renderUsageColumn(usage) {
+                const isSelected = this.selectedCardId === usage.id || this.selectedCardId === null;
+                
+                this.colUsage.innerHTML = `
+                    <div id="${usage.id}" 
+                         onclick="app.handleCardClick('${usage.id}')"
+                         class="card-node w-full bg-indigo-950/70 border-2 ${isSelected ? 'border-indigo-500 shadow-xl shadow-indigo-500/20' : 'border-indigo-900/50 opacity-40'} rounded-2xl p-5 text-center cursor-pointer relative group">
+                        <div class="w-14 h-14 bg-indigo-600 text-white rounded-2xl flex items-center justify-center mx-auto mb-3 shadow-lg shadow-indigo-600/30 group-hover:scale-110 transition">
+                            <i class="fa-solid ${usage.icon} text-2xl"></i>
+                        </div>
+                        <h3 class="text-base font-extrabold text-white mb-1.5">${usage.title}</h3>
+                        <p class="text-xs text-indigo-200/80 leading-relaxed">${usage.desc}</p>
+                    </div>
+                `;
+            }
+
+            /* COLUMN 2 RENDERER */
+            renderTechniquesColumn(items) {
+                this.colTech.innerHTML = '';
+
+                items.forEach((item) => {
+                    const isHighlighted = this.mode === 'explore' && (
+                        this.selectedCardId === null || 
+                        this.selectedCardId === item.techId || 
+                        this.selectedCardId === item.solId || 
+                        this.selectedCardId === 'u-' + this.currentObjKey
+                    );
+
+                    const isMatchedInGame = this.gameMatches[item.solId] === item.techId;
+                    const assignedSol = items.find(i => this.gameMatches[i.solId] === item.techId);
+
+                    const card = document.createElement('div');
+                    card.id = item.techId;
+                    
+                    if (this.mode === 'explore') {
+                        card.onclick = () => this.handleCardClick(item.techId);
+                        card.className = `card-node w-full bg-emerald-950/60 border-2 ${isHighlighted ? 'border-emerald-500 shadow-lg shadow-emerald-500/10' : 'border-emerald-900/40 opacity-40'} rounded-2xl p-4 cursor-pointer relative group flex items-start gap-3.5`;
+                        
+                        card.innerHTML = `
+                            <div class="w-10 h-10 bg-emerald-600/80 text-white rounded-xl flex items-center justify-center shrink-0 mt-0.5 shadow-md group-hover:bg-emerald-500 transition">
+                                <i class="fa-solid ${item.techIcon} text-base"></i>
+                            </div>
+                            <div class="flex-1 min-w-0">
+                                <h3 class="text-sm font-bold text-emerald-100 truncate mb-0.5">${item.techTitle}</h3>
+                                <p class="text-xs text-emerald-200/70 leading-snug line-clamp-2">${item.techDesc}</p>
+                            </div>
+                        `;
+                    } else {
+                        // Game Dropzone Mode
+                        card.className = `w-full bg-slate-800/90 border-2 ${isMatchedInGame ? 'border-emerald-500 bg-emerald-950/30' : 'border-slate-700'} rounded-2xl p-3.5 transition`;
+                        card.ondragover = (e) => this.handleDragOver(e);
+                        card.ondragleave = (e) => this.handleDragLeave(e);
+                        card.ondrop = (e) => this.handleDrop(e, item.techId);
+
+                        card.innerHTML = `
+                            <div class="flex items-center gap-3 mb-2">
+                                <div class="w-8 h-8 bg-emerald-600/30 text-emerald-400 rounded-lg flex items-center justify-center text-sm font-bold">
+                                    <i class="fa-solid ${item.techIcon}"></i>
+                                </div>
+                                <div>
+                                    <h4 class="text-xs font-bold text-emerald-300">${item.techTitle}</h4>
+                                    <p class="text-[10px] text-slate-400">${item.techDesc}</p>
+                                </div>
+                            </div>
+                            <!-- Dropzone Target Box -->
+                            <div class="drop-zone border-2 border-dashed ${assignedSol ? 'border-emerald-500/80 bg-emerald-950/40' : 'border-slate-600 bg-slate-900/50'} rounded-xl p-2.5 min-h-[50px] flex items-center justify-center text-center transition">
+                                ${assignedSol ? `
+                                    <div class="flex items-center gap-2 text-amber-300 font-bold text-xs">
+                                        <i class="fa-solid ${assignedSol.solIcon}"></i>
+                                        <span>${assignedSol.solTitle}</span>
+                                        <i class="fa-solid fa-circle-check text-emerald-400 ml-auto text-sm"></i>
+                                    </div>
+                                ` : `
+                                    <span class="text-[11px] text-slate-500 italic"><i class="fa-solid fa-arrow-down-to-line mr-1"></i>Dépose la solution ici</span>
+                                `}
+                            </div>
+                        `;
+                    }
+
+                    this.colTech.appendChild(card);
+                });
+            }
+
+            /* COLUMN 3 RENDERER */
+            renderSolutionsColumn(items) {
+                this.colSol.innerHTML = '';
+
+                // In Game mode, shuffle solutions to test student
+                let displayItems = [...items];
+                if (this.mode === 'game') {
+                    // Seeded or simple shuffle
+                    displayItems.sort((a, b) => a.solTitle.localeCompare(b.solTitle));
+                }
+
+                displayItems.forEach((item) => {
+                    const isHighlighted = this.mode === 'explore' && (
+                        this.selectedCardId === null || 
+                        this.selectedCardId === item.solId || 
+                        this.selectedCardId === item.techId || 
+                        this.selectedCardId === 'u-' + this.currentObjKey
+                    );
+
+                    const isAssignedInGame = Object.keys(this.gameMatches).includes(item.solId);
+
+                    const card = document.createElement('div');
+                    card.id = item.solId;
+
+                    if (this.mode === 'explore') {
+                        card.onclick = () => this.handleCardClick(item.solId);
+                        card.className = `card-node w-full bg-amber-950/60 border-2 ${isHighlighted ? 'border-amber-500 shadow-lg shadow-amber-500/10' : 'border-amber-900/40 opacity-40'} rounded-2xl p-4 cursor-pointer relative group flex items-start gap-3.5`;
+
+                        card.innerHTML = `
+                            <div class="w-10 h-10 bg-amber-600/80 text-white rounded-xl flex items-center justify-center shrink-0 mt-0.5 shadow-md group-hover:bg-amber-500 transition">
+                                <i class="fa-solid ${item.solIcon} text-base"></i>
+                            </div>
+                            <div class="flex-1 min-w-0">
+                                <h3 class="text-sm font-bold text-amber-100 truncate mb-0.5">${item.solTitle}</h3>
+                                <p class="text-xs text-amber-200/70 leading-snug line-clamp-2">${item.solDesc}</p>
+                            </div>
+                        `;
+                    } else {
+                        // Drag & Drop Draggable Card
+                        card.draggable = !isAssignedInGame;
+                        card.ondragstart = (e) => this.handleDragStart(e, item.solId);
+                        card.className = `w-full bg-amber-950/50 border-2 ${isAssignedInGame ? 'border-slate-700 opacity-30 cursor-not-allowed' : 'border-amber-500 cursor-grab active:cursor-grabbing hover:bg-amber-900/40'} rounded-2xl p-3 flex items-center gap-3 transition shadow-md`;
+
+                        card.innerHTML = `
+                            <div class="w-9 h-9 bg-amber-600 text-white rounded-xl flex items-center justify-center shrink-0 text-sm font-bold">
+                                <i class="fa-solid ${item.solIcon}"></i>
+                            </div>
+                            <div class="flex-1 min-w-0">
+                                <h4 class="text-xs font-bold text-amber-200 truncate">${item.solTitle}</h4>
+                                <p class="text-[10px] text-amber-300/60 truncate">${item.solDesc}</p>
+                            </div>
+                            <i class="fa-solid fa-grip-vertical text-slate-500 text-xs"></i>
+                        `;
+                    }
+
+                    this.colSol.appendChild(card);
+                });
+            }
+
+            /* CARD INTERACTION IN EXPLORE MODE */
+            handleCardClick(id) {
+                if (this.mode !== 'explore') return;
+
+                if (this.selectedCardId === id) {
+                    this.selectedCardId = null; // Toggle reset
+                } else {
+                    this.selectedCardId = id;
+                }
+
+                this.render();
+            }
+
+            /* DRAG AND DROP HANDLERS FOR GAME MODE */
+            handleDragStart(e, solId) {
+                e.dataTransfer.setData('text/plain', solId);
+                e.dataTransfer.effectAllowed = 'move';
+            }
+
+            handleDragOver(e) {
+                e.preventDefault();
+                e.dataTransfer.dropEffect = 'move';
+                const zone = e.currentTarget.querySelector('.drop-zone');
+                if (zone) zone.classList.add('drag-over');
+            }
+
+            handleDragLeave(e) {
+                const zone = e.currentTarget.querySelector('.drop-zone');
+                if (zone) zone.classList.remove('drag-over');
+            }
+
+            handleDrop(e, targetTechId) {
+                e.preventDefault();
+                const zone = e.currentTarget.querySelector('.drop-zone');
+                if (zone) zone.classList.remove('drag-over');
+
+                const solId = e.dataTransfer.getData('text/plain');
+                if (!solId) return;
+
+                // Assign match
+                this.gameMatches[solId] = targetTechId;
+                this.updateGameScore();
+                this.render();
+            }
+
+            /* SVG CONNECTORS DRAWING (LEFT-TO-RIGHT BEZIER CURVES) */
+            drawConnectors() {
+                // Clear existing paths
+                const existingPaths = this.svgCanvas.querySelectorAll('.connector-path');
+                existingPaths.forEach(p => p.remove());
+
+                // SVG lines only active in Explore mode
+                if (this.mode !== 'explore') return;
+
+                const currentObj = objectsData[this.currentObjKey];
+                const usageEl = document.getElementById(currentObj.usage.id);
+
+                if (!usageEl) return;
+
+                const canvasRect = this.svgCanvas.getBoundingClientRect();
+
+                // 1. Draw curves from Usage (Col 1) -> Each Technique (Col 2)
+                currentObj.items.forEach(item => {
+                    const techEl = document.getElementById(item.techId);
+                    const solEl = document.getElementById(item.solId);
+
+                    if (!techEl || !solEl) return;
+
+                    const isTechActive = this.selectedCardId === null || 
+                                         this.selectedCardId === currentObj.usage.id || 
+                                         this.selectedCardId === item.techId || 
+                                         this.selectedCardId === item.solId;
+
+                    // Line 1: Col 1 -> Col 2
+                    this.drawBezierLink(
+                        usageEl, techEl, canvasRect, 
+                        'url(#grad-blue-green)', 
+                        isTechActive ? 3 : 1, 
+                        isTechActive ? 0.8 : 0.1
+                    );
+
+                    // Line 2: Col 2 -> Col 3
+                    this.drawBezierLink(
+                        techEl, solEl, canvasRect, 
+                        'url(#grad-green-amber)', 
+                        isTechActive ? 3 : 1, 
+                        isTechActive ? 0.8 : 0.1
+                    );
+                });
+            }
+
+            drawBezierLink(fromEl, toEl, canvasRect, strokeGradient, strokeWidth, opacity) {
+                const fromRect = fromEl.getBoundingClientRect();
+                const toRect = toEl.getBoundingClientRect();
+
+                // Start point (Right edge of source card)
+                const startX = fromRect.right - canvasRect.left;
+                const startY = fromRect.top + fromRect.height / 2 - canvasRect.top;
+
+                // End point (Left edge of target card)
+                const endX = toRect.left - canvasRect.left;
+                const endY = toRect.top + toRect.height / 2 - canvasRect.top;
+
+                // Smooth Horizontal Control Points
+                const dx = Math.abs(endX - startX) * 0.5;
+                const cp1X = startX + dx;
+                const cp1Y = startY;
+                const cp2X = endX - dx;
+                const cp2Y = endY;
+
+                const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+                path.setAttribute('d', `M ${startX} ${startY} C ${cp1X} ${cp1Y}, ${cp2X} ${cp2Y}, ${endX} ${endY}`);
+                path.setAttribute('stroke', strokeGradient);
+                path.setAttribute('stroke-width', strokeWidth);
+                path.setAttribute('fill', 'none');
+                path.setAttribute('opacity', opacity);
+                path.setAttribute('stroke-linecap', 'round');
+                path.classList.add('connector-path', 'connector-line');
+
+                if (strokeWidth > 1.5) {
+                    path.setAttribute('filter', 'url(#glow)');
+                }
+
+                this.svgCanvas.appendChild(path);
+            }
+        }
+
+        // Initialize App on DOM Ready
+        let app;
+        document.addEventListener('DOMContentLoaded', () => {
+            app = new FunctionalTreeApp();
+            app.init();
+        });
+    </script>
+</body>
+</html>
