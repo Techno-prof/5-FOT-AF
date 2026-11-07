@@ -3,80 +3,141 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Affiche</title>
+<title>Bien-être</title>
 <style>
-  * { margin: 0; padding: 0; box-sizing: border-box; }
-  html, body { width: 100%; height: 100%; overflow: hidden; background: #000; font-family: Arial, sans-serif; }
+  html, body {
+    margin: 0;
+    height: 100%;
+    background: #000;
+    overflow: hidden;
+  }
 
-  /* Affiche en fond */
-  .affiche {
+  /* Écran 1 : fond noir + bouton lecture */
+  #accueil {
     position: fixed; inset: 0;
-    background: url("affiche.png") center / cover no-repeat;
+    background: #000;
+    display: flex; align-items: center; justify-content: center;
+  }
+  #btnPlay {
+    width: 110px; height: 110px;
+    border-radius: 50%;
+    border: 4px solid #fff;
+    background: transparent;
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    transition: transform .2s, background .2s;
+  }
+  #btnPlay:hover { transform: scale(1.1); background: rgba(255,255,255,.15); }
+  #btnPlay::before {
+    content: "";
+    margin-left: 10px;
+    border-style: solid;
+    border-width: 25px 0 25px 42px;
+    border-color: transparent transparent transparent #fff;
   }
 
-  /* Boutons */
-  .btn {
-    position: fixed; left: 50%; bottom: 8%;
+  /* Écran 2 : lecteur vidéo */
+  #lecteur {
+    position: fixed; inset: 0;
+    background: #000;
+    display: none;
+  }
+  #lecteur iframe { width: 100%; height: 100%; border: 0; }
+
+  /* Écran 3 : affiche finale */
+  #affiche {
+    position: fixed; inset: 0;
+    background: url("affiche.png") center / cover no-repeat #000;
+    display: none;
+  }
+  #btnRejouer {
+    position: absolute; bottom: 30px; left: 50%;
     transform: translateX(-50%);
-    padding: 16px 36px; font-size: 1.2rem; font-weight: bold;
-    color: #fff; background: rgba(0,0,0,.65);
-    border: 2px solid #fff; border-radius: 50px;
-    cursor: pointer; transition: .2s; z-index: 5;
+    padding: 12px 28px;
+    font-size: 18px;
+    border: 2px solid #fff;
+    background: rgba(0,0,0,.6);
+    color: #fff;
+    border-radius: 30px;
+    cursor: pointer;
   }
-  .btn:hover { background: #fff; color: #000; }
-
-  /* Calque vidéo */
-  .video-layer {
-    position: fixed; inset: 0; background: #000;
-    display: none; z-index: 10;
-  }
-  .video-layer iframe { width: 100%; height: 100%; border: 0; }
-
-  /* Bouton retour, placé en haut à gauche (évite les commandes Drive) */
-  .btn-retour {
-    position: fixed; top: 16px; left: 16px;
-    padding: 10px 20px; font-size: 1rem;
-    color: #fff; background: rgba(0,0,0,.75);
-    border: 2px solid #fff; border-radius: 30px;
-    cursor: pointer; z-index: 20; display: none;
-  }
-  .btn-retour:hover { background: #fff; color: #000; }
+  #btnRejouer:hover { background: rgba(255,255,255,.2); }
 </style>
 </head>
 <body>
 
-  <!-- Affiche + bouton lancer / rejouer -->
-  <div class="affiche"></div>
-  <button class="btn" id="btnPlay">▶ Lancer la vidéo</button>
+<div id="accueil">
+  <button id="btnPlay" aria-label="Lancer la vidéo"></button>
+</div>
 
-  <!-- Vidéo Google Drive -->
-  <div class="video-layer" id="videoLayer">
-    <iframe id="driveFrame" src="" allow="autoplay; fullscreen" allowfullscreen></iframe>
-  </div>
-  <button class="btn-retour" id="btnRetour">⏹ Retour à l'affiche</button>
+<div id="lecteur"><div id="player"></div></div>
+
+<div id="affiche">
+  <button id="btnRejouer">↻ Rejouer</button>
+</div>
 
 <script>
-  const VIDEO_URL = "https://drive.google.com/file/d/1_RmCkdx-uwwL1KjmvmTii7NE4SxIpIV8/view?usp=drive_link";
+  const VIDEO_ID = "COLLER_ICI_ID_YOUTUBE";
 
-  const btnPlay = document.getElementById("btnPlay");
-  const btnRetour = document.getElementById("btnRetour");
-  const layer = document.getElementById("videoLayer");
-  const frame = document.getElementById("driveFrame");
+  const accueil = document.getElementById("accueil");
+  const lecteur = document.getElementById("lecteur");
+  const affiche = document.getElementById("affiche");
+  let player = null;
 
-  btnPlay.addEventListener("click", () => {
-    frame.src = VIDEO_URL;          // charge la vidéo
-    layer.style.display = "block";
-    btnRetour.style.display = "block";
-    btnPlay.style.display = "none";
-  });
+  // Chargement de l'API YouTube
+  const tag = document.createElement("script");
+  tag.src = "https://www.youtube.com/iframe_api";
+  document.head.appendChild(tag);
 
-  btnRetour.addEventListener("click", () => {
-    frame.src = "";                 // arrête la vidéo
-    layer.style.display = "none";
-    btnRetour.style.display = "none";
-    btnPlay.textContent = "↻ Rejouer";
-    btnPlay.style.display = "block";
-  });
+  let apiPrete = false;
+  window.onYouTubeIframeAPIReady = function () { apiPrete = true; };
+
+  function lancer() {
+    accueil.style.display = "none";
+    affiche.style.display = "none";
+    lecteur.style.display = "block";
+
+    if (player) {
+      player.seekTo(0);
+      player.playVideo();
+      return;
+    }
+
+    if (!apiPrete) {
+      // L'API n'est pas encore chargée : on réessaie dans un instant
+      setTimeout(lancer, 300);
+      return;
+    }
+
+    player = new YT.Player("player", {
+      width: "100%",
+      height: "100%",
+      videoId: VIDEO_ID,
+      playerVars: {
+        autoplay: 1,
+        rel: 0,          // pas de vidéos suggérées à la fin
+        modestbranding: 1,
+        playsinline: 1
+      },
+      events: {
+        onStateChange: function (e) {
+          // 0 = vidéo terminée
+          if (e.data === YT.PlayerState.ENDED) {
+            terminer();
+          }
+        }
+      }
+    });
+  }
+
+  function terminer() {
+    lecteur.style.display = "none";
+    affiche.style.display = "block";
+  }
+
+  document.getElementById("btnPlay").addEventListener("click", lancer);
+  document.getElementById("btnRejouer").addEventListener("click", lancer);
 </script>
+
 </body>
 </html>
