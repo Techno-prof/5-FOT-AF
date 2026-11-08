@@ -42,7 +42,11 @@
     background: #000;
     display: none;
   }
-  #lecteur iframe { width: 100%; height: 100%; border: 0; }
+  #lecteur video {
+    width: 100%; height: 100%;
+    object-fit: contain;
+    background: #000;
+  }
 
   /* Écran 3 : affiche finale */
   #affiche {
@@ -70,70 +74,35 @@
   <button id="btnPlay" aria-label="Lancer la vidéo"></button>
 </div>
 
-<div id="lecteur"><div id="player"></div></div>
+<div id="lecteur">
+  <video id="video" src="video.mp4" controls playsinline preload="auto"></video>
+</div>
 
 <div id="affiche">
   <button id="btnRejouer">↻ Rejouer</button>
 </div>
 
 <script>
-  const VIDEO_ID = "COLLER_ICI_ID_YOUTUBE";
-
   const accueil = document.getElementById("accueil");
   const lecteur = document.getElementById("lecteur");
   const affiche = document.getElementById("affiche");
-  let player = null;
-
-  // Chargement de l'API YouTube
-  const tag = document.createElement("script");
-  tag.src = "https://www.youtube.com/iframe_api";
-  document.head.appendChild(tag);
-
-  let apiPrete = false;
-  window.onYouTubeIframeAPIReady = function () { apiPrete = true; };
+  const video   = document.getElementById("video");
 
   function lancer() {
     accueil.style.display = "none";
     affiche.style.display = "none";
     lecteur.style.display = "block";
-
-    if (player) {
-      player.seekTo(0);
-      player.playVideo();
-      return;
-    }
-
-    if (!apiPrete) {
-      // L'API n'est pas encore chargée : on réessaie dans un instant
-      setTimeout(lancer, 300);
-      return;
-    }
-
-    player = new YT.Player("player", {
-      width: "100%",
-      height: "100%",
-      videoId: VIDEO_ID,
-      playerVars: {
-        autoplay: 1,
-        rel: 0,          // pas de vidéos suggérées à la fin
-        modestbranding: 1,
-        playsinline: 1
-      },
-      events: {
-        onStateChange: function (e) {
-          // 0 = vidéo terminée
-          if (e.data === YT.PlayerState.ENDED) {
-            terminer();
-          }
-        }
-      }
-    });
+    video.currentTime = 0;
+    video.play();
   }
 
   function terminer() {
     lecteur.style.display = "none";
     affiche.style.display = "block";
   }
+
+  // Déclenché automatiquement à la fin réelle de la vidéo
+  video.addEventListener("ended", terminer);
 
   document.getElementById("btnPlay").addEventListener("click", lancer);
   document.getElementById("btnRejouer").addEventListener("click", lancer);
