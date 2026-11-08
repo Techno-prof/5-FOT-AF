@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Bien-être</title>
+<title>Bien-ĂȘtre</title>
 <style>
   html, body {
     margin: 0;
@@ -48,14 +48,20 @@
     background: #000;
   }
 
-  /* Écran 3 : affiche finale */
+  /* Écran 3 : affiche finale (largeur 100 %, défilement si besoin) */
   #affiche {
     position: fixed; inset: 0;
-    background: url("affiche.png") center / cover no-repeat #000;
+    background: #000;
     display: none;
+    overflow-y: auto;
+  }
+  #affiche img {
+    display: block;
+    width: 100%;
+    height: auto;
   }
   #btnRejouer {
-    position: absolute; bottom: 30px; left: 50%;
+    position: fixed; bottom: 30px; left: 50%;
     transform: translateX(-50%);
     padding: 12px 28px;
     font-size: 18px;
@@ -79,6 +85,7 @@
 </div>
 
 <div id="affiche">
+  <img src="affiche.png" alt="Affiche">
   <button id="btnRejouer">↻ Rejouer</button>
 </div>
 
@@ -99,6 +106,7 @@
   function terminer() {
     lecteur.style.display = "none";
     affiche.style.display = "block";
+    affiche.scrollTop = 0; // remet l'affiche en haut
   }
 
   // Déclenché automatiquement à la fin réelle de la vidéo
